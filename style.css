@@ -1,0 +1,82 @@
+/* div#content {
+    min-width: 600px;
+} */
+
+div.content {
+    display: flex;
+}
+
+div.col {
+    flex: 1;
+    padding: 5px;
+    margin-right: 10px;
+    background-color: #eee;
+    border-radius: 10px;
+}
+
+body {
+    font-size: 14px;
+    /* padding: 20px; */
+}
+
+span.repo {
+    cursor: grab;
+    font-weight: bold;
+}
+
+li.repo {
+    margin-top: 20px;
+}
+
+.repo-alias {
+    margin-left: 5px;
+}
+
+
+.spinner {
+    display: inline;
+    color: white;
+    background-color: green;
+    padding: 3px;
+}
+
+.dayofweek {
+    margin-top: 30px;
+}
+
+.dayofweek span {
+    font-weight: bold;    
+}
+
+textarea.callouts {
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 800px;
+    width: 100%;
+    border: .5px solid lightgray;
+    border-radius: 7px;
+    overflow: hidden;
+}
+
+p.callouts {
+    font-size: 12px;
+    cursor: pointer;
+}
+
+input.repo-alias {
+    border: .5px solid lightgray;
+}
+
+ul.dropzone {
+    min-height: 20px;
+    margin-block-start: .3em;
+}
+
+ul.dropzone.dragover {
+    border: .5px dashed;
+    background-color: lightgray;
+}
+
+.hidden {
+    display: none;
+}
