@@ -7,6 +7,10 @@
     "action": {
         "default_title": "Jira Group by Repo"
     },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
     "background": {
         "service_worker": "background.js"
     },

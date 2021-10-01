@@ -1,19 +1,42 @@
 (async () => {
-
-    const instanceName = 'cakemarketing';
-    const baseUrl = `https://${instanceName}.atlassian.net`;
-    // const jql = encodeURIComponent('key in (CK-495, CORE-879, CORE-218, CORE-34, CORE-567, CORE-12, CORE-456, CORE-400, CORE-800)');
-    // const jql = encodeURIComponent('key in (CK-495, CORE-1)');
-    // const jql = encodeURIComponent('key in (CK-495, CORE-1, TUX-5, TUX-74, TUX-75)');
-    const jql = encodeURIComponent('project in (CORE, MAD, TUX, KJ, "Support Engineering", CSIKanban) AND statusCategory = Done AND (labels is EMPTY OR labels != DEPLOY_NOT_NEEDED) AND issuetype in standardIssueTypes() AND statusCategoryChangedDate > startOfDay(-30) AND development[pullrequests].all > 0 and status = "Next Release" ORDER BY Rank ASC');
+    const MAX_ISSUES = 100;
     const CODELESS = 'CODELESS';
     const REPO_HOSTS = ['GitHub', 'bitbucket'];
     const PLACEHOLDER = '---';
 
-    document.addEventListener('DOMContentLoaded', async () => {
 
-        await getIssues();
+    let settings;
+    chrome.storage.sync.get(['instance', 'jql'], async s => {
+        if (!s.instance || !s.jql) {
+            chrome.runtime.openOptionsPage();
+            debugger;
+        } else {
 
+            settings = s;
+            settings.baseUrl = `https://${settings.instance}.atlassian.net`;
+
+            try {
+                const { issues, repos } = await getIssuesAndRepos(settings);
+                render(issues, repos);
+                setupDragDrop();
+                setupReactiveInput();
+
+            } catch (ex) {
+                alert(ex);
+            }
+
+            otherListeners();
+        }
+    });
+
+
+    function otherListeners() {
+        document.querySelector('#settings').addEventListener('click', event => {
+            chrome.runtime.openOptionsPage();
+        })
+    }
+
+    function setupDragDrop() {
         document.querySelectorAll('ul.dropzone').forEach(el => {
             el.addEventListener('drop', event => {
                 const sourceElId = event.dataTransfer.getData('text/plain');
@@ -35,14 +58,15 @@
             })
         })
 
-
         document.querySelectorAll('li.repo').forEach(el => {
-            el.addEventListener('dragstart', event => {                
+            el.addEventListener('dragstart', event => {
                 event.dataTransfer.setData('text/plain', event.target.id);
                 event.dataTransfer.dropEffect = "move";
             })
         })
+    }
 
+    function setupReactiveInput() {
         document.querySelectorAll('textarea.callouts').forEach(el => {
             el.addEventListener('change', calloutTextAreaLostFocus);
             el.addEventListener('blur', calloutTextAreaLostFocus);
@@ -66,7 +90,7 @@
             try {
                 repo = event.target.parentElement.parentElement.parentElement.id
                 localStorage.setItem(repo, event.target.value);
-            } catch {}
+            } catch { }
         }
 
         function autoGrow(event) {
@@ -75,86 +99,99 @@
                 el.style.height = el.scrollHeight + "px";
             }
         }
-    })
 
+    }
 
-    async function getIssues() {
-        try {
-            const result = await fetch(baseUrl + `/rest/api/3/search?jql=${jql}&fields=assignee,summary&expand=names&maxResults=100`);
-            if (result.status === 200) {
-                const { issues } = await result.json();
+    async function getIssuesAndRepos(settings) {
 
-                const devInfoPromises = [];
-                for (let i of issues) {
-                    for (let rh of REPO_HOSTS) {
-                        devInfoPromises.push(getRepos(i.id, rh))
-                    }
+        const result = await fetch(settings.baseUrl + `/rest/api/3/search?jql=${encodeURIComponent(settings.jql)}&fields=assignee,summary&expand=names&maxResults=100`);
+        if (result.status === 200) {
+            const { issues } = await result.json();
+
+            if (issues.length > MAX_ISSUES) {
+                throw('Too many issues returned by your JQL, please add more filters.');
+            }
+
+            const devInfoPromises = [];
+            for (let i of issues) {
+                for (let rh of REPO_HOSTS) {
+                    devInfoPromises.push(getRepos(i.id, rh))
                 }
-                const promisesResults = await Promise.allSettled(devInfoPromises);
+            }
+            const promisesResults = await Promise.allSettled(devInfoPromises);
 
-                // build the repos object
-                const repos = {};
-                const issuesWithRepos = {}; // keep track if an issue has repos
-                for (let i in promisesResults) {
-                    const devInfo = promisesResults[i];
-                    if (devInfo.status === 'fulfilled') {
-                        const issueIndex = Math.floor(i / 2);
-                        devInfo.value.detail[0].repositories.forEach(r => {
-                            issuesWithRepos[issueIndex] = true;
-                            const repo = /* devInfo.value.detail[0]._instance.name + ' / ' + */ r.name.split('/').slice(-1)[0]
-                            if (!repos[repo]) {
-                                repos[repo] = [issueIndex]
-                            } else {
-                                if (repos[repo].indexOf(issueIndex) === -1) {
-                                    repos[repo].push(issueIndex)
-                                }
+            const repos = {};
+            const issuesWithRepos = {}; // keep track if an issue has repos
+            for (let i in promisesResults) {
+                const devInfo = promisesResults[i];
+                if (devInfo.status === 'fulfilled') {
+                    const issueIndex = Math.floor(i / 2);
+                    devInfo.value.detail[0].repositories.forEach(r => {
+                        issuesWithRepos[issueIndex] = true;
+                        const repo = /* devInfo.value.detail[0]._instance.name + ' / ' + */ r.name.split('/').slice(-1)[0]
+                        if (!repos[repo]) {
+                            repos[repo] = [issueIndex]
+                        } else {
+                            if (repos[repo].indexOf(issueIndex) === -1) {
+                                repos[repo].push(issueIndex)
                             }
-                        })
-                        if (i % REPO_HOSTS.length === REPO_HOSTS.length - 1 && !issuesWithRepos[issueIndex]) {
-                            if (repos[CODELESS]) {
-                                if (repos[CODELESS].indexOf(issueIndex) === -1) {
-                                    repos[CODELESS].push(issueIndex);
-                                }
-                            } else {
-                                repos[CODELESS] = [issueIndex];
+                        }
+                    })
+                    if (i % REPO_HOSTS.length === REPO_HOSTS.length - 1 && !issuesWithRepos[issueIndex]) {
+                        if (repos[CODELESS]) {
+                            if (repos[CODELESS].indexOf(issueIndex) === -1) {
+                                repos[CODELESS].push(issueIndex);
                             }
+                        } else {
+                            repos[CODELESS] = [issueIndex];
                         }
                     }
                 }
+            }
+            return { issues, repos };
 
-                let html = '';
-                html += '<ul class="dropzone">';
-                for (let repo of Object.keys(repos)) {
-                    html += `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>`; // <input class="repo-alias">
-                    html += `<ul>`;
-                    for (let issueIndex of repos[repo]) {
-                        const i = issues[issueIndex];
-                        const { key, fields } = i;
-                        const { summary } = fields;
-                        html += `<li><a href="${baseUrl}/browse/${key}" target="_blank">${key}</a> (${i.fields.assignee.displayName}): ${summary}</li>`;
-                    }
-                    html += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo) || ''}</textarea>
+        } else if(result.status === 400) {
+            throw('Please make sure you are logged into Jira in this window and check the configured JQL in Jira search');
+        } else if(result.status === 404) {
+            throw('Invalid cookie, please login to Atlassian Jira in a new tab of same window');
+        } else {
+            throw (`${result.status}: ${result.statusText}`);
+        }
+
+    }
+
+
+    function render(issues, repos) {
+        let html = '';
+        html += '<ul class="dropzone">';
+        for (let repo of Object.keys(repos)) {
+            html += `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>`; // <input class="repo-alias">
+            html += `<ul>`;
+            for (let issueIndex of repos[repo]) {
+                const i = issues[issueIndex];
+                const { key, fields } = i;
+                const { summary } = fields;
+                html += `<li><a href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${i.fields.assignee ? i.fields.assignee.displayName : '<Unassigned>'}): ${summary}</li>`;
+            }
+            html += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo) || ''}</textarea>
                     <p class="callouts">${localStorage.getItem(repo) || PLACEHOLDER}</p>
                     </li>
                     </ul>
                     </li>`;
-                }
-                html += '</ul>'
-
-                document.getElementById('repos').innerHTML = html;
-            } else {
-                throw (new Exception(`${result.status}: ${result.statusText}`));
-            }
-
-        } catch (ex) {
-            console.log(ex);
+        }        
+        html += '</ul>'
+        if (issues.length === 0) {
+            document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
+        } else {
+            document.getElementById('repos').innerHTML = html;
         }
+
     }
 
 
     async function getRepos(issueId, repoHost) {
         try {
-            const result = await fetch(`${baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
+            const result = await fetch(`${settings.baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
             if (result.status === 200) {
                 return await result.json();
             } else {

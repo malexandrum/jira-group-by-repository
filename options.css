@@ -1,0 +1,20 @@
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    min-width: 600px;
+}
+
+.form-fields div {
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    margin: 10px;
+}
+
+input {
+    width: 300px;
+}
+
+div#status {
+    height: 1em;
+}

@@ -2,6 +2,12 @@
     min-width: 600px;
 } */
 
+div.top-menu {
+    display: flex;
+    justify-content: end;
+    cursor: pointer;
+}
+
 div.content {
     display: flex;
 }
