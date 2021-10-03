@@ -1,7 +1,7 @@
 {
     "author": "Alexandru Molodoi",
     "name": "Jira Group By Repository",
-    "description": "From a selection of Jira issues based on JQL, group by repository and then allow creation of stories in a specific project for each repo. Related issues in each group are linked to the new story. One use case is to track production rollouts as individual Jira tasks to be able to report on success / rollback / roll forward",
+    "description": "From a selection of Jira issues based on JQL, group by repository",
     "version": "0.0.1",
     "manifest_version": 3,
     "action": {

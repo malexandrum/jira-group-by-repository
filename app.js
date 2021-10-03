@@ -40,10 +40,15 @@
         document.querySelectorAll('ul.dropzone').forEach(el => {
             el.addEventListener('drop', event => {
                 const sourceElId = event.dataTransfer.getData('text/plain');
-                if (event.target.classList.contains('dropzone')) {
-                    event.target.appendChild(document.getElementById(sourceElId));
-                    event.target.classList.remove('dragover');
+                let target = event.target;
+                while (!target.classList.contains('dropzone')) {
+                    if (!target.parentElement) {
+                        break;
+                    }
+                    target = target.parentElement;
                 }
+                target.appendChild(document.getElementById(sourceElId));
+                target.classList.remove('dragover');
             });
             el.addEventListener('dragover', event => {
                 event.preventDefault();
@@ -109,7 +114,7 @@
             const { issues } = await result.json();
 
             if (issues.length > MAX_ISSUES) {
-                throw('Too many issues returned by your JQL, please add more filters.');
+                throw ('Too many issues returned by your JQL, please add more filters.');
             }
 
             const devInfoPromises = [];
@@ -150,10 +155,10 @@
             }
             return { issues, repos };
 
-        } else if(result.status === 400) {
-            throw('Please make sure you are logged into Jira in this window and check the configured JQL in Jira search');
-        } else if(result.status === 404) {
-            throw('Invalid cookie, please login to Atlassian Jira in a new tab of same window');
+        } else if (result.status === 400) {
+            throw ('Please make sure you are logged into Jira in this window and check the configured JQL in Jira search');
+        } else if (result.status === 404) {
+            throw ('Invalid cookie, please login to Atlassian Jira in a new tab of same window');
         } else {
             throw (`${result.status}: ${result.statusText}`);
         }
@@ -178,7 +183,7 @@
                     </li>
                     </ul>
                     </li>`;
-        }        
+        }
         html += '</ul>'
         if (issues.length === 0) {
             document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
