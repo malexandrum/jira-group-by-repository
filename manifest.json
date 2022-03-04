@@ -1,7 +1,7 @@
 {
     "author": "Alexandru Molodoi",
-    "name": "Jira Group By Repository",
-    "description": "From a selection of Jira issues based on JQL, group by repository",
+    "name": "Jira Release Planning Tool",
+    "description": "From a selection of Jira issues based on JQL, group by component/service, then repository",
     "version": "0.0.1",
     "manifest_version": 3,
     "action": {

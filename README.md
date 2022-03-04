@@ -8,3 +8,5 @@ To add to chrome:
 Pull changes and then go to extensions and reload extension
 ### If you downloaded zip
 Re-download and overwrite then go to extensions and reload extension
+
+

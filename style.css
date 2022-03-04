@@ -26,9 +26,13 @@ body {
     /* padding: 20px; */
 }
 
-span.repo {
+/* span.repo {
     cursor: grab;
     font-weight: bold;
+} */
+
+li[draggable] {
+    cursor: grab;
 }
 
 li.repo {
@@ -81,10 +85,20 @@ ul.dropzone {
     margin-block-end: .3em;
 }
 
+
 ul.dropzone.dragover {
     border: .5px dashed;
     background-color: lightgray;
 }
+
+li.dropzone {
+    background-color: inherit;
+}
+
+li.dropzone.dragover {
+    background-color: lightgray;
+}
+
 
 .hidden {
     display: none;
