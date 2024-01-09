@@ -1,8 +1,8 @@
 {
     "author": "Alexandru Molodoi",
     "name": "Jira Release Planning Tool",
-    "description": "From a selection of Jira issues based on JQL, group by component/service, then repository",
-    "version": "0.0.1",
+    "description": "From a selection of Jira issues based on JQL, group by code repository and plan a week ahead",
+    "version": "1.0.0",
     "manifest_version": 3,
     "action": {
         "default_title": "Jira Group by Repo"

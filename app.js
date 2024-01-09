@@ -14,6 +14,8 @@
         return
     }
 
+    document.getElementById('copy-confirmation').style.display = 'none'
+
     try {
         const { issues, repos, components } = await getData(settings);
         render(issues, repos, components);
@@ -25,6 +27,8 @@
     }
 
     otherListeners();
+
+    document.getElementById('copy').addEventListener('click', copySelection)
 
     function otherListeners() {
         document.querySelector('#settings').addEventListener('click', event => {
@@ -39,8 +43,7 @@
                 const sourceEl = document.getElementById(sourceElId);
                 let target = event.target;
 
-                console.log('dropped on target:', target)
-                const childList = target.querySelector('ul');
+                const childList = target.querySelector('ol');
                 if (childList) {
                     childList.appendChild(sourceEl);
                 }
@@ -74,31 +77,78 @@
         })
     }
 
+    function removeDraggable() {
+        const elements = document.querySelectorAll('[draggable]');
+        elements?.forEach(el => el.removeAttribute('draggable'))
+        return elements
+    }
+
+    function reEnableDraggable(elements) {
+        elements?.forEach(el => el.setAttribute('draggable', 'true'))
+    }
+
+    function copySelection() {
+        if (!window.getSelection) return
+        const draggableElems = removeDraggable()
+        
+        const selectionDiv = document.createElement('div')
+        document.body.append(selectionDiv)
+        selectionDiv.append(document.querySelector('#days').cloneNode(true))
+        selectionDiv.append(document.createElement('br'))
+        selectionDiv.append(document.getElementById('root-callout').parentElement.cloneNode(true))
+        const range = document.createRange()
+        range.selectNodeContents(selectionDiv)
+        const selection = window.getSelection()
+        selection.removeAllRanges()
+        selection.addRange(range)
+                
+        document.execCommand('copy')
+        selection.removeAllRanges()
+        document.body.removeChild(selectionDiv)
+
+        reEnableDraggable(draggableElems)
+        const copyConfirmation = document.getElementById('copy-confirmation')
+        copyConfirmation.style.display = '';
+        setTimeout(() => {copyConfirmation.style.display = 'none'}, 5000)
+    }
+
     function setupReactiveInput() {
-        document.querySelectorAll('textarea.callouts').forEach(el => {
+        document.querySelectorAll('textarea.callouts')?.forEach(el => {
             el.addEventListener('change', calloutTextAreaLostFocus);
             el.addEventListener('blur', calloutTextAreaLostFocus);
             el.addEventListener('keyup', autoGrow);
         });
 
-        document.querySelectorAll('p.callouts').forEach(el => {
-            el.addEventListener('click', event => {
-                event.target.classList.add('hidden');
-                const textArea = event.target.previousElementSibling;
-                textArea.classList.remove('hidden');
-                textArea.focus();
-            })
-        })
+        const pCallouts = document.querySelectorAll('p.callouts')
+        if (pCallouts) {
+            for (const el of pCallouts) {
+                el.addEventListener('click', event => {
+                    event.target.classList.add('hidden');
+                    const textArea = event.target.previousElementSibling;
+                    textArea.classList.remove('hidden');
+                    textArea.focus();
+                })
+            } 
+        }
+
+        document.getElementById('root-callout').value = localStorage.getItem('rootCallout');
+        document.getElementById('root-callout').nextElementSibling.innerText = localStorage.getItem('rootCallout') || PLACEHOLDER;
 
         function calloutTextAreaLostFocus(event) {
             event.target.classList.add('hidden');
             event.target.nextElementSibling.classList.remove('hidden')
-            event.target.nextElementSibling.innerText = event.target.value || PLACEHOLDER;
-            let repo;
+            event.target.nextElementSibling.innerText = event.target.value.trim() || PLACEHOLDER;
+            let key;
             try {
-                repo = event.target.parentElement.parentElement.parentElement.id
-                localStorage.setItem(repo, event.target.value);
-            } catch { }
+                key = event.target.parentElement.parentElement.parentElement.id || 'rootCallout'
+            } catch { 
+                key = 'rootCallout'
+            }
+            if (event.target.value.trim()) {
+                localStorage.setItem(key, event.target.value.trim());
+            } else {
+                localStorage.removeItem(key)
+            }
         }
 
         function autoGrow(event) {
@@ -142,7 +192,6 @@
             const issuesWithRepos = {}; // keep track if an issue has repos
             for (let i in promisesResults) {
                 const devInfo = promisesResults[i];
-                console.log(i, devInfo);
                 if (devInfo.status === 'fulfilled') {
                     const issueIndex = Math.floor(i / 2);
                     devInfo.value.detail[0].repositories.forEach(r => {
@@ -183,13 +232,13 @@
     function render(issues, repos, components) {
         let html = '';
         html += `<ul>`;
-        html += `<li class="dropzone">Services <button id="add-service">Add</button>`;
-        html += `<ul class="service-components">`;
-        for (let c of components) {
-            html += reusableServiceComponent(c);
-        }
-        html += `</ul></li>`;
-        html += '<li class="dropzone">Repos<ul>';
+        // html += `<li class="dropzone">Services <button id="add-service">Add</button>`;
+        // html += `<ul class="service-components">`;
+        // for (let c of components) {
+        //     html += reusableServiceComponent(c);
+        // }
+        // html += `</ul></li>`;
+        html += '<li class="dropzone">Repos:<ul>';
         for (let repo of Object.keys(repos)) {
             html += `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>`; // <input class="repo-alias">
             html += `<ul>`;
@@ -199,8 +248,8 @@
                 const { summary } = fields;
                 html += `<li><a href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${i.fields.assignee ? i.fields.assignee.displayName : '<Unassigned>'}): ${summary}</li>`;
             }
-            html += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo) || ''}</textarea>
-                    <p class="callouts">${localStorage.getItem(repo) || PLACEHOLDER}</p>
+            html += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo)?.trim() || ''}</textarea>
+                    <p class="callouts">${localStorage.getItem(repo)?.trim() || PLACEHOLDER}</p>
                     </li>
                     </ul>
                     </li>`;
@@ -210,7 +259,7 @@
             document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
         } else {
             document.getElementById('repos').innerHTML = html;
-        }
+        }        
 
     }
 
@@ -225,17 +274,13 @@
     }
 
 
-    async function getRepos(issueId, repoHost) {
-        // try {
+    async function getRepos(issueId, repoHost) {        
         const result = await fetch(`${settings.baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
         if (result.status === 200) {
             return await result.json();
         } else {
             throw (new Exception(`${result.status}: ${result.statusText}`));
         }
-        // } catch (ex) {
-        //     return ex;
-        // }
     }
 
     async function restoreSettings() {

@@ -23,7 +23,7 @@ div.col {
 
 body {
     font-size: 14px;
-    /* padding: 20px; */
+    padding: 10px;
 }
 
 /* span.repo {
@@ -36,8 +36,9 @@ li[draggable] {
 }
 
 li.repo {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    padding: 5px;
 }
 
 .repo-alias {
@@ -53,15 +54,15 @@ li.repo {
 }
 
 .dayofweek {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
 }
 
-.dayofweek span {
+.dayofweek>span {
     font-weight: bold;    
 }
 
 textarea.callouts {
-    font-size: 12px;
+    /* font-size: 12px; */
     font-family: Arial, Helvetica, sans-serif;
     max-width: 800px;
     width: 100%;
@@ -71,7 +72,7 @@ textarea.callouts {
 }
 
 p.callouts {
-    font-size: 12px;
+    /* font-size: 12px; */
     cursor: pointer;
 }
 
@@ -93,10 +94,11 @@ ul.dropzone.dragover {
 
 li.dropzone {
     background-color: inherit;
+    padding: 5px;
 }
 
 li.dropzone.dragover {
-    background-color: lightgray;
+    background-color: lightgreen;
 }
 
 
@@ -106,4 +108,12 @@ li.dropzone.dragover {
 
 li > p {
     margin: 0px;
+}
+
+#copy-confirmation {
+    color: gray;
+}
+
+label {
+    font-weight: bold;
 }

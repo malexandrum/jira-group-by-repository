@@ -13,8 +13,10 @@
         <span id="settings">⚙️</span>
     </div>
     <div>
-        <textarea class="callouts hidden" rows="3"></textarea>
-        <p class="callouts">Callouts</p>
+        <label for="root-callout">Meeting Notes:</label>
+        <br />
+        <textarea class="callouts hidden" id="root-callout" rows="3"></textarea>
+        <p class="callouts"></p>
     </div>
     <br />
     <!--Repos <button class="small-button" id="get-issues">Refresh</button>: -->
@@ -28,27 +30,26 @@
             <ul id="days">
                 <li class="dayofweek dropzone">
                     <span>🗓 Monday</span>
-                    <ul></ul>
+                    <ol></ol>
                 </li>
                 <li class="dayofweek dropzone">
                     <span>🗓 Tuesday</span>
-                    <ul></ul>
+                    <ol></ol>
                 </li>
                 <li class="dayofweek dropzone">
                     <span>🗓 Wednesday</span>
-                    <ul></ul>
+                    <ol></ol>
                 </li>
                 <li class="dayofweek dropzone">
                     <span>🗓 Thursday</span>
-                    <ul></ul>
+                    <ol></ol>
                 </li>
                 <li class="dayofweek dropzone">
                     <span>🗓 Friday</span>
-                    <ul></ul>
+                    <ol></ol>
                 </li>
-
-    
             </ul>
+            <button id="copy">Copy</button>&nbsp<span id="copy-confirmation">Copied</span>
         </div>
     </div>
 </body>
