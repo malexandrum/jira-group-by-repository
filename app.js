@@ -2,7 +2,11 @@
     const MAX_ISSUES = 100;
     const CODELESS = 'CODELESS';
     const REPO_HOSTS = ['GitHub', 'bitbucket'];
-    const PLACEHOLDER = '---';
+    const PLACEHOLDER = '[Add Deploy Notes]';
+    const REL_NOTES_FIELD = 'customfield_14357';
+    const SCHEDULE_TARGETS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    let scheduledRepos = {};
 
     let settings;
     try {
@@ -17,10 +21,8 @@
     document.getElementById('copy-confirmation').style.display = 'none'
 
     try {
-        const { issues, repos, components } = await getData(settings);
-        render(issues, repos, components);
-        setupDragDrop();
-        setupReactiveInput();
+        var { issues, repos, components } = await getData(settings);
+        render();        
 
     } catch (ex) {
         alert(ex);
@@ -30,6 +32,8 @@
 
     document.getElementById('copy').addEventListener('click', copySelection)
 
+    document.getElementById('reset-schedule').addEventListener('click', () => { scheduledRepos = {}; render(); })
+
     function otherListeners() {
         document.querySelector('#settings').addEventListener('click', event => {
             chrome.runtime.openOptionsPage();
@@ -38,43 +42,69 @@
 
     function setupDragDrop() {
         document.querySelectorAll('li.dropzone').forEach(el => {
+            let dragEnterCounter = 0;
             el.addEventListener('drop', event => {
                 const sourceElId = event.dataTransfer.getData('text/plain');
-                const sourceEl = document.getElementById(sourceElId);
-                let target = event.target;
-
-                const childList = target.querySelector('ol');
-                if (childList) {
-                    childList.appendChild(sourceEl);
+                const existingIndex = scheduledRepos[el.id]?.indexOf(sourceElId)
+                if (existingIndex !== undefined && existingIndex !== -1) {
+                    scheduledRepos[el.id].splice(existingIndex, 1);
                 }
-                // while (!target.classList.contains('dropzone')) {
-                //     if (!target.parentElement) {
-                //         break;
-                //     }
-                //     target = target.parentElement;
-                // }
-                // target.appendChild(document.getElementById(sourceElId));
-                target.classList.remove('dragover');
+                scheduledRepos[el.id] = [...scheduledRepos[el.id] || [], sourceElId]
+
+                render();
             });
             el.addEventListener('dragover', event => {
+                // console.log('dragover', event, el)
                 event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
             })
             el.addEventListener('dragenter', event => {
-                event.preventDefault();
-                event.target.classList.add('dragover');
+                dragEnterCounter++;
+                // console.log('ondragenter', event, el)                
+                el.classList.add('dragover');
             })
             el.addEventListener('dragleave', event => {
-                event.preventDefault();
-                event.target.classList.remove('dragover');
+                // console.log('ondragleave', event, el)
+                if (--dragEnterCounter === 0)
+                    el.classList.remove('dragover');
             })
         })
 
         document.querySelectorAll('li[draggable]').forEach(el => {
             el.addEventListener('dragstart', event => {
-                event.dataTransfer.setData('text/plain', event.target.id);
-                event.dataTransfer.dropEffect = "move";
+                event.dataTransfer.setData('text/plain', el.id);
+                event.dataTransfer.setDragImage(el.querySelector('span.repo'), 0, 20)
             })
         })
+
+        const removeFromScheduleZone = document.querySelector('#remove-from-schedule');
+        removeFromScheduleZone?.addEventListener('dragenter', e => {
+            e.target.classList.add('active')            
+        })
+        removeFromScheduleZone?.addEventListener('dragleave', e => {
+            e.target.classList.remove('active')
+        })
+        removeFromScheduleZone?.addEventListener('dragover', e => {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = "move";            
+        })
+        removeFromScheduleZone?.addEventListener('drop', e => {
+            const repo = e.dataTransfer.getData('text/plain');
+            let changed = false
+            for (let schedRepos of Object.values(scheduledRepos)) {
+                const idx = schedRepos?.indexOf(repo)
+                if (idx !== undefined && idx !== -1) {
+                    schedRepos.splice(idx, 1)
+                    changed = true
+                }
+            }
+            e.target.classList.remove('active')
+
+            if (changed) {
+                render()
+            }
+        })
+
     }
 
     function removeDraggable() {
@@ -90,18 +120,23 @@
     function copySelection() {
         if (!window.getSelection) return
         const draggableElems = removeDraggable()
-        
+
         const selectionDiv = document.createElement('div')
         document.body.append(selectionDiv)
         selectionDiv.append(document.querySelector('#days').cloneNode(true))
         selectionDiv.append(document.createElement('br'))
         selectionDiv.append(document.getElementById('root-callout').parentElement.cloneNode(true))
+        selectionDiv.querySelectorAll('.repo li').forEach(el => { if (el.innerText === PLACEHOLDER) { el.parentElement.removeChild(el) } })
+        selectionDiv.append(document.createElement('br'))
+        selectionDiv.append(document.getElementById('release-notes').previousElementSibling.cloneNode(true));
+        selectionDiv.append(document.getElementById('release-notes').cloneNode(true));
+
         const range = document.createRange()
         range.selectNodeContents(selectionDiv)
         const selection = window.getSelection()
         selection.removeAllRanges()
         selection.addRange(range)
-                
+
         document.execCommand('copy')
         selection.removeAllRanges()
         document.body.removeChild(selectionDiv)
@@ -109,7 +144,7 @@
         reEnableDraggable(draggableElems)
         const copyConfirmation = document.getElementById('copy-confirmation')
         copyConfirmation.style.display = '';
-        setTimeout(() => {copyConfirmation.style.display = 'none'}, 5000)
+        setTimeout(() => { copyConfirmation.style.display = 'none' }, 5000)
     }
 
     function setupReactiveInput() {
@@ -128,7 +163,7 @@
                     textArea.classList.remove('hidden');
                     textArea.focus();
                 })
-            } 
+            }
         }
 
         document.getElementById('root-callout').value = localStorage.getItem('rootCallout');
@@ -141,7 +176,7 @@
             let key;
             try {
                 key = event.target.parentElement.parentElement.parentElement.id || 'rootCallout'
-            } catch { 
+            } catch {
                 key = 'rootCallout'
             }
             if (event.target.value.trim()) {
@@ -162,7 +197,7 @@
 
     async function getData(settings) {
 
-        const result = await fetch(settings.baseUrl + `/rest/api/3/search?jql=${encodeURIComponent(settings.jql)}&fields=assignee,summary,components&expand=names&maxResults=100`);
+        const result = await fetch(settings.baseUrl + `/rest/api/3/search?jql=${encodeURIComponent(settings.jql)}&fields=assignee,summary,components,${REL_NOTES_FIELD}&expand=names&maxResults=100`);
         if (result.status === 200) {
             const { issues } = await result.json();
 
@@ -229,38 +264,64 @@
     }
 
 
-    function render(issues, repos, components) {
-        let html = '';
-        html += `<ul>`;
+    function render() {
+        let reposHtml = '';
+        reposHtml += `<ul>`;
         // html += `<li class="dropzone">Services <button id="add-service">Add</button>`;
         // html += `<ul class="service-components">`;
         // for (let c of components) {
         //     html += reusableServiceComponent(c);
         // }
         // html += `</ul></li>`;
-        html += '<li class="dropzone">Repos:<ul>';
+        reposHtml += '<li>Repos:<ul>';
         for (let repo of Object.keys(repos)) {
-            html += `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>`; // <input class="repo-alias">
-            html += `<ul>`;
-            for (let issueIndex of repos[repo]) {
-                const i = issues[issueIndex];
-                const { key, fields } = i;
-                const { summary } = fields;
-                html += `<li><a href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${i.fields.assignee ? i.fields.assignee.displayName : '<Unassigned>'}): ${summary}</li>`;
+            let skip = false
+            for (let sr of Object.values(scheduledRepos)) {
+                if (sr.indexOf(repo) !== -1) {
+                    skip = true
+                    break;
+                }
             }
-            html += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo)?.trim() || ''}</textarea>
-                    <p class="callouts">${localStorage.getItem(repo)?.trim() || PLACEHOLDER}</p>
-                    </li>
-                    </ul>
-                    </li>`;
+            !skip && (reposHtml += renderRepo(repo, repos, issues, false))
         }
-        html += '</ul></li></ul>'
+        reposHtml += '</ul></li></ul>'
         if (issues.length === 0) {
             document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
         } else {
-            document.getElementById('repos').innerHTML = html;
-        }        
+            document.getElementById('repos').innerHTML = reposHtml;
+        }
 
+        let scheduleHtml = '';
+        SCHEDULE_TARGETS.forEach(st => {
+            scheduleHtml += `<li class="dayofweek dropzone" id="${st}">
+            <span>🗓 ${st}</span>
+            <ol>${scheduledRepos[st]?.map(sr => renderRepo(sr, repos, issues, true)).join('') || ''}</ol>`
+        })
+        document.getElementById('days').innerHTML = scheduleHtml;
+
+        let releaseNotesHtml = '';
+        const mentionedStories = new Set()
+        Object.values(scheduledRepos).forEach(srs => {
+            srs.forEach(sr => {
+                repos[sr].forEach(issueId => {
+                    if (!mentionedStories.has(issueId)) {
+                        mentionedStories.add(issueId);
+                        let relNote = issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary;
+                        const relNoteLower = relNote?.toLowerCase();
+                        if (relNoteLower.indexOf('fix') != -1 || relNoteLower.indexOf('bug') !== -1) {
+                            relNote = '🔴 ' + relNote;
+                        } else {
+                            relNote = '🆕 ' + relNote;
+                        }
+                        releaseNotesHtml += `<li>${relNote}</li>`
+                    }
+                })
+            })
+        });
+        document.getElementById('release-notes').innerHTML = releaseNotesHtml;
+
+        setupDragDrop()
+        setupReactiveInput()
     }
 
     function reusableServiceComponent(c) {
@@ -274,7 +335,7 @@
     }
 
 
-    async function getRepos(issueId, repoHost) {        
+    async function getRepos(issueId, repoHost) {
         const result = await fetch(`${settings.baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
         if (result.status === 200) {
             return await result.json();
@@ -296,6 +357,33 @@
             })
 
         })
+    }
+
+    function renderIssue(issue, ignoreRelNotes = false) {
+        const { fields, key } = issue;
+        const { summary, assignee } = fields;
+        let result = `<li><a draggable="false" href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${assignee ? assignee.displayName : '<Unassigned>'}): ${summary}`;
+        if (!ignoreRelNotes) {
+            const relNotes = fields[REL_NOTES_FIELD] || '<i style="color: orange;">⚠️ null | None | nil</i>';
+            result += `<ul><li>Release Notes: ${relNotes}</li></ul>`;
+        }
+        result += '</li>';
+        return result
+    }
+
+    function renderRepo(repo, repos, issues, ignoreRelNotes = false) {
+        let result = `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>` +
+            `<ul>`;
+        for (let issueIndex of repos[repo]) {
+            const i = issues[issueIndex];
+            result += renderIssue(i, ignoreRelNotes);
+        }
+        result += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo)?.trim() || ''}</textarea>
+                    <p class="callouts">${localStorage.getItem(repo)?.trim() || PLACEHOLDER}</p>
+                    </li>
+                    </ul>
+                    </li>`;
+        return result;
     }
 
 })()

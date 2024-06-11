@@ -10,8 +10,9 @@
 
 <body>
     <div class="top-menu">
-        <span id="settings">⚙️</span>
+        <span id="settings"><u>Settings</u></span>
     </div>
+    <h1>Deployment Planning</h1>
     <div>
         <label for="root-callout">Meeting Notes:</label>
         <br />
@@ -27,28 +28,19 @@
         <!-- <br /><br /> -->
         <div class="col">
             <!-- *** Schedule *** -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="display: inline;">Deployment Schedule</h3>
+                <div style="display: flex;">
+                    <button id="reset-schedule">Reset</button>
+                    <div id="remove-from-schedule" style="display: inline; padding: 5px; border: 1px dotted red; margin-left: 10px;">🗑️ Drag here to
+                        remove from schedule</div>
+                </div>
+            </div>
             <ul id="days">
-                <li class="dayofweek dropzone">
-                    <span>🗓 Monday</span>
-                    <ol></ol>
-                </li>
-                <li class="dayofweek dropzone">
-                    <span>🗓 Tuesday</span>
-                    <ol></ol>
-                </li>
-                <li class="dayofweek dropzone">
-                    <span>🗓 Wednesday</span>
-                    <ol></ol>
-                </li>
-                <li class="dayofweek dropzone">
-                    <span>🗓 Thursday</span>
-                    <ol></ol>
-                </li>
-                <li class="dayofweek dropzone">
-                    <span>🗓 Friday</span>
-                    <ol></ol>
-                </li>
             </ul>
+            <h3>Release Notes (Customer Facing)</h3>
+            <ul id="release-notes"></ul>
+            <br />
             <button id="copy">Copy</button>&nbsp<span id="copy-confirmation">Copied</span>
         </div>
     </div>

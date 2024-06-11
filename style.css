@@ -117,3 +117,7 @@ li > p {
 label {
     font-weight: bold;
 }
+
+#remove-from-schedule.active {
+    background-color: lightcoral;
+}
