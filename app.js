@@ -73,7 +73,7 @@
         document.querySelectorAll('li[draggable]').forEach(el => {
             el.addEventListener('dragstart', event => {
                 event.dataTransfer.setData('text/plain', el.id);
-                event.dataTransfer.setDragImage(el.querySelector('span.repo'), 0, 20)
+                event.dataTransfer.setDragImage(el.querySelector('div.repo'), 0, 20)
             })
         })
 
@@ -362,7 +362,7 @@
     function renderIssue(issue, ignoreRelNotes = false) {
         const { fields, key } = issue;
         const { summary, assignee } = fields;
-        let result = `<li><a draggable="false" href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${assignee ? assignee.displayName : '<Unassigned>'}): ${summary}`;
+        let result = `<li class="issue"><a draggable="false" href="${settings.baseUrl}/browse/${key}" target="_blank">${key}</a> (${assignee ? assignee.displayName : '<Unassigned>'}): ${summary}`;
         if (!ignoreRelNotes) {
             const relNotes = fields[REL_NOTES_FIELD] || '<i style="color: orange;">⚠️ null | None | nil</i>';
             result += `<ul><li>Release Notes: ${relNotes}</li></ul>`;
@@ -372,7 +372,7 @@
     }
 
     function renderRepo(repo, repos, issues, ignoreRelNotes = false) {
-        let result = `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><span class="repo">${repo}</span>` +
+        let result = `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><div class="repo">${repo}</div>` +
             `<ul>`;
         for (let issueIndex of repos[repo]) {
             const i = issues[issueIndex];
