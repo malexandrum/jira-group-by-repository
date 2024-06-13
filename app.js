@@ -45,12 +45,13 @@
             let dragEnterCounter = 0;
             el.addEventListener('drop', event => {
                 const sourceElId = event.dataTransfer.getData('text/plain');
-                const existingIndex = scheduledRepos[el.id]?.indexOf(sourceElId)
-                if (existingIndex !== undefined && existingIndex !== -1) {
-                    scheduledRepos[el.id].splice(existingIndex, 1);
-                }
+                Object.values(scheduledRepos).forEach(sr => {
+                    const existingIndex = sr?.indexOf(sourceElId)
+                    if (existingIndex !== undefined && existingIndex !== -1) {
+                        sr.splice(existingIndex, 1);
+                    }
+                })
                 scheduledRepos[el.id] = [...scheduledRepos[el.id] || [], sourceElId]
-
                 render();
             });
             el.addEventListener('dragover', event => {

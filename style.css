@@ -45,16 +45,13 @@ div.col {
     border-radius: 10px;
     box-shadow: grey 0px 1px 5px 1px;
     flex: 1;
-    /* margin-right: 10px; */
     padding: 15px;
     overflow-y: auto;
 }
 
-
-/* span.repo {
-    cursor: grab;
-    font-weight: bold;
-} */
+div.col h3:first-of-type {
+    margin-block-start: 0;
+}
 
 li[draggable] {
     cursor: grab;
