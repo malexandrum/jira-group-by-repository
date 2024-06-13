@@ -71,6 +71,7 @@ li.repo.isdragged {
 li.repo>div {
     display: inline-block;
     padding: 5px;
+    margin-top: 1px; /* to fix dragging image having part of border */
 }
 
 li.issue {
