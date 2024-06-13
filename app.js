@@ -6,33 +6,38 @@
     const REL_NOTES_FIELD = 'customfield_14357';
     const SCHEDULE_TARGETS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    // app state
+    let issues, repos, components, filesByRepo;
     let scheduledRepos = {};
-
     let settings;
-    try {
-        settings = await restoreSettings();
-    }
-    catch (ex) {
-        console.log(ex);
-        alert('After configuring settings, please refresh')
-        return
-    }
+
+    await getDataAndRender();
+
     document.getElementById('version').innerHTML = 'v' + chrome?.runtime?.getManifest?.().version || ''
     document.getElementById('copy-confirmation').style.display = 'none'
-
-    try {
-        var { issues, repos, components, filesByRepo } = await getData(settings);
-        render();
-
-    } catch (ex) {
-        alert(ex);
-    }
 
     otherListeners();
 
     document.getElementById('copy').addEventListener('click', copySelection)
-
     document.getElementById('reset-schedule').addEventListener('click', () => { scheduledRepos = {}; render(); })
+    document.getElementById('load-from-jira').addEventListener('click', getDataAndRender);
+
+    async function getDataAndRender() {
+        try {
+            settings = await restoreSettings();
+        }
+        catch (ex) {
+            alert(ex);
+            return
+        }
+        try {
+            ({ issues, repos, components, filesByRepo } = await getData(settings));
+            render();
+
+        } catch (ex) {
+            alert(ex);
+        }
+    }
 
     function otherListeners() {
         document.querySelector('#settings').addEventListener('click', event => {
@@ -201,6 +206,8 @@
     }
 
     async function getData(settings) {
+        document.getElementById('load-from-jira').style.display = 'none';
+        document.getElementById('load-from-jira-spinner').style.display = '';
 
         const result = await fetch(settings.baseUrl + `/rest/api/3/search?jql=${encodeURIComponent(settings.jql)}&fields=assignee,summary,components,${REL_NOTES_FIELD}&expand=names&maxResults=100`);
         if (result.status === 200) {
@@ -288,8 +295,7 @@
     }
 
     function render() {
-        let reposHtml = '';
-        reposHtml += '<h3>Repositories Ready for Scheduling</h3><ul>';
+        let reposHtml = '<ul>';
         for (let repo of Object.keys(repos)) {
             let skip = false
             for (let sr of Object.values(scheduledRepos)) {
@@ -302,10 +308,12 @@
         }
         reposHtml += '</ul>'
         if (issues.length === 0) {
-            document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
+            document.getElementById('repo-list').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
         } else {
-            document.getElementById('repos').innerHTML = reposHtml;
+            document.getElementById('repo-list').innerHTML = reposHtml;
         }
+        document.getElementById('load-from-jira').style.display = '';
+        document.getElementById('load-from-jira-spinner').style.display = 'none';
 
         let scheduleHtml = '';
         SCHEDULE_TARGETS.forEach(st => {

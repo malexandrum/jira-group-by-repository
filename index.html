@@ -26,7 +26,14 @@
         <!--Repos <button class="small-button" id="get-issues">Refresh</button>: -->
         <div class="content">
             <div id='repos' class="col">
-                <div class="spinner">Loading from Jira...</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Repositories Ready for Scheduling</h3>
+                    <div>
+                        <div id="load-from-jira-spinner" class="spinner">Loading from Jira...</div>
+                        <button id="load-from-jira">Reload from Jira</button>
+                    </div>
+                </div>
+                <div id="repo-list"></div>                
             </div>
             <!-- <br /><br /> -->
             <div class="col">
