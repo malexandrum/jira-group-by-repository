@@ -1,6 +1,6 @@
 (async () => {
     const MAX_ISSUES = 100;
-    const CODELESS = 'CODELESS';
+    const CODELESS = '_WITHOUT_STORY_KEY_IN_COMMIT_MESSAGE_';
     const REPO_HOSTS = ['GitHub', 'bitbucket'];
     const PLACEHOLDER = '[Add Deploy Notes]';
     const REL_NOTES_FIELD = 'customfield_14357';
@@ -17,12 +17,12 @@
         alert('After configuring settings, please refresh')
         return
     }
-
+    document.getElementById('version').innerHTML = 'v' + chrome?.runtime?.getManifest?.().version || ''
     document.getElementById('copy-confirmation').style.display = 'none'
 
     try {
-        var { issues, repos, components } = await getData(settings);
-        render();        
+        var { issues, repos, components, filesByRepo } = await getData(settings);
+        render();
 
     } catch (ex) {
         alert(ex);
@@ -73,20 +73,24 @@
         document.querySelectorAll('li[draggable]').forEach(el => {
             el.addEventListener('dragstart', event => {
                 event.dataTransfer.setData('text/plain', el.id);
-                event.dataTransfer.setDragImage(el.querySelector('div.repo'), 0, 20)
+                event.dataTransfer.setDragImage(el.querySelector('div.repo'), 0, 20);
+                el.classList.add('isdragged');
+            })
+            el.addEventListener('dragend', () => {
+                el.classList.remove('isdragged');
             })
         })
 
         const removeFromScheduleZone = document.querySelector('#remove-from-schedule');
         removeFromScheduleZone?.addEventListener('dragenter', e => {
-            e.target.classList.add('active')            
+            e.target.classList.add('active')
         })
         removeFromScheduleZone?.addEventListener('dragleave', e => {
             e.target.classList.remove('active')
         })
         removeFromScheduleZone?.addEventListener('dragover', e => {
             e.preventDefault()
-            e.dataTransfer.dropEffect = "move";            
+            e.dataTransfer.dropEffect = "move";
         })
         removeFromScheduleZone?.addEventListener('drop', e => {
             const repo = e.dataTransfer.getData('text/plain');
@@ -223,7 +227,8 @@
             }
             const promisesResults = await Promise.allSettled(devInfoPromises);
 
-            const repos = {};
+            let repos = {};
+            const filesByRepo = {};
             const issuesWithRepos = {}; // keep track if an issue has repos
             for (let i in promisesResults) {
                 const devInfo = promisesResults[i];
@@ -239,7 +244,15 @@
                                 repos[repo].push(issueIndex)
                             }
                         }
+
+                        filesByRepo[repo] = filesByRepo[repo] || new Set();
+                        r.commits?.forEach(commit => {
+                            commit.files?.forEach(f => {
+                                f.path && filesByRepo[repo].add(f.path);
+                            })
+                        });
                     })
+
                     if (i % REPO_HOSTS.length === REPO_HOSTS.length - 1 && !issuesWithRepos[issueIndex]) {
                         if (repos[CODELESS]) {
                             if (repos[CODELESS].indexOf(issueIndex) === -1) {
@@ -251,7 +264,8 @@
                     }
                 }
             }
-            return { issues, repos, components };
+            repos = Object.keys(repos).sort((a, b) => a.toLocaleLowerCase().localeCompare(b.toLocaleLowerCase())).reduce((ordered, key) => { ordered[key] = repos[key]; return ordered }, {})
+            return { issues, repos, components, filesByRepo };
 
         } else if (result.status === 400) {
             throw ('Please make sure you are logged into Jira in this window and check the configured JQL in Jira search');
@@ -263,17 +277,18 @@
 
     }
 
+    async function getRepos(issueId, repoHost) {
+        const result = await fetch(`${settings.baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
+        if (result.status === 200) {
+            return await result.json();
+        } else {
+            throw (new Exception(`${result.status}: ${result.statusText}`));
+        }
+    }
 
     function render() {
         let reposHtml = '';
-        reposHtml += `<ul>`;
-        // html += `<li class="dropzone">Services <button id="add-service">Add</button>`;
-        // html += `<ul class="service-components">`;
-        // for (let c of components) {
-        //     html += reusableServiceComponent(c);
-        // }
-        // html += `</ul></li>`;
-        reposHtml += '<li>Repos:<ul>';
+        reposHtml += '<h3>Repositories Ready for Scheduling</h3><ul>';
         for (let repo of Object.keys(repos)) {
             let skip = false
             for (let sr of Object.values(scheduledRepos)) {
@@ -284,7 +299,7 @@
             }
             !skip && (reposHtml += renderRepo(repo, repos, issues, false))
         }
-        reposHtml += '</ul></li></ul>'
+        reposHtml += '</ul>'
         if (issues.length === 0) {
             document.getElementById('repos').innerHTML = `No issues match filter <b>${settings.jql}</b>`;
         } else {
@@ -301,23 +316,27 @@
 
         let releaseNotesHtml = '';
         const mentionedStories = new Set()
+        const releaseNotes = []
         Object.values(scheduledRepos).forEach(srs => {
             srs.forEach(sr => {
                 repos[sr].forEach(issueId => {
                     if (!mentionedStories.has(issueId)) {
                         mentionedStories.add(issueId);
-                        let relNote = issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary;
-                        const relNoteLower = relNote?.toLowerCase();
-                        if (relNoteLower.indexOf('fix') != -1 || relNoteLower.indexOf('bug') !== -1) {
-                            relNote = '🔴 ' + relNote;
-                        } else {
-                            relNote = '🆕 ' + relNote;
-                        }
-                        releaseNotesHtml += `<li>${relNote}</li>`
+                        releaseNotes.push(issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary)
                     }
                 })
             })
         });
+        releaseNotes.sort((a, b) => a.toLocaleLowerCase().localeCompare(b.toLocaleLowerCase()));
+        releaseNotes.forEach(relNote => {
+            const relNoteLower = relNote?.toLowerCase();
+            if (relNoteLower.indexOf('fix') != -1 || relNoteLower.indexOf('bug') !== -1) {
+                relNote = '🔴 ' + relNote;
+            } else {
+                relNote = '🆕 ' + relNote;
+            }
+            releaseNotesHtml += `<li>${relNote}</li>`
+        })
         document.getElementById('release-notes').innerHTML = releaseNotesHtml;
 
         setupDragDrop()
@@ -335,14 +354,7 @@
     }
 
 
-    async function getRepos(issueId, repoHost) {
-        const result = await fetch(`${settings.baseUrl}/rest/dev-status/latest/issue/detail?issueId=${issueId}&applicationType=${repoHost}&dataType=repository`);
-        if (result.status === 200) {
-            return await result.json();
-        } else {
-            throw (new Exception(`${result.status}: ${result.statusText}`));
-        }
-    }
+
 
     async function restoreSettings() {
         return new Promise((resolve, reject) => {
@@ -378,6 +390,10 @@
             const i = issues[issueIndex];
             result += renderIssue(i, ignoreRelNotes);
         }
+        const files = Array.from(filesByRepo[repo] || []).map(f => f.split('/').slice(-1)[0]).sort();
+        result += `<li title="${files.join('\n')}">Files: ${files.length > 0 ? files.slice(0, 5).join(', ') +
+            (files.length > 5 ? ' <b>+' + (files.length - 5) + ' more</b>' : '')
+            : 'N/A'}</li>`;
         result += `<li><textarea rows="1" class="callouts hidden">${localStorage.getItem(repo)?.trim() || ''}</textarea>
                     <p class="callouts">${localStorage.getItem(repo)?.trim() || PLACEHOLDER}</p>
                     </li>

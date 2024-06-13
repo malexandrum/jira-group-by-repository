@@ -9,40 +9,47 @@
 </head>
 
 <body>
-    <div class="top-menu">
-        <span id="settings"><u>Settings</u></span>
-    </div>
-    <h1>Deployment Planning</h1>
-    <div>
-        <label for="root-callout">Meeting Notes:</label>
-        <br />
-        <textarea class="callouts hidden" id="root-callout" rows="3"></textarea>
-        <p class="callouts"></p>
-    </div>
-    <br />
-    <!--Repos <button class="small-button" id="get-issues">Refresh</button>: -->
-    <div class="content">
-        <div id='repos' class="col">
-            <div class="spinner">Loading from Jira...</div>
-        </div>
-        <!-- <br /><br /> -->
-        <div class="col">
-            <!-- *** Schedule *** -->
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="display: inline;">Deployment Schedule</h3>
-                <div style="display: flex;">
-                    <button id="reset-schedule">Reset</button>
-                    <div id="remove-from-schedule" style="display: inline; padding: 5px; border: 1px dotted red; margin-left: 10px;">🗑️ Drag here to
-                        remove from schedule</div>
-                </div>
+    <div class="all-content">
+        <div class="top-menu">
+            <h1>Deployment Planning</h1>
+            <div style="display: flex; align-items: flex-start; column-gap: 10px;">
+                <div id="version">v</div>
+                <a href="#" id="settings">Settings</a>
             </div>
-            <ul id="days">
-            </ul>
-            <h3>Release Notes (Customer Facing)</h3>
-            <ul id="release-notes"></ul>
-            <br />
-            <button id="copy">Copy</button>&nbsp<span id="copy-confirmation">Copied</span>
         </div>
+        <div class="header">
+            <label for="root-callout">Meeting Notes:</label>
+            <br />
+            <textarea class="callouts hidden" id="root-callout" rows="3"></textarea>
+            <p class="callouts"></p>
+        </div>
+        <!--Repos <button class="small-button" id="get-issues">Refresh</button>: -->
+        <div class="content">
+            <div id='repos' class="col">
+                <div class="spinner">Loading from Jira...</div>
+            </div>
+            <!-- <br /><br /> -->
+            <div class="col">
+                <!-- *** Schedule *** -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="display: inline;">Deployment Schedule</h3>
+                    <div style="display: flex; align-items: center;">
+                        <button id="reset-schedule">Reset</button>
+                        <div id="remove-from-schedule"
+                            style="display: inline; padding: 5px; border: 1px dashed red; margin-left: 10px;">🗑️ Drag
+                            here to
+                            remove from schedule</div>
+                    </div>
+                </div>
+                <ul id="days">
+                </ul>
+                <h3>Release Notes (Customer Facing)</h3>
+                <ul id="release-notes"></ul>
+                <br />
+                <button id="copy">Copy</button>&nbsp<span id="copy-confirmation">Copied</span>
+            </div>
+        </div>
+        <div class="footer"></div>
     </div>
 </body>
 

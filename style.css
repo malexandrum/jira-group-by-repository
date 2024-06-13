@@ -1,15 +1,43 @@
 /* div#content {
     min-width: 600px;
 } */
+* {
+    box-sizing: border-box;
+}
+body {
+    height: 100%;
+    margin: 0;
+    font-size: 14px;
+    padding: 20px;
+}
+
+div.all-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
 
 div.top-menu {
     display: flex;
-    justify-content: end;
-    cursor: pointer;
+    flex: 0 1 auto;
+    justify-content: space-between;
+    /* cursor: pointer; */
+}
+
+div.header {
+    flex: 0 0 auto;
 }
 
 div.content {
     display: flex;
+    flex: 0 1 auto;
+    overflow-y: auto;
+    column-gap: 10px;
+    padding: 3px;
+}
+
+div.footer {
+    flex: 1 0 auto;
 }
 
 div.col {
@@ -17,14 +45,11 @@ div.col {
     border-radius: 10px;
     box-shadow: grey 0px 1px 5px 1px;
     flex: 1;
-    margin-right: 10px;
+    /* margin-right: 10px; */
     padding: 15px;
+    overflow-y: auto;
 }
 
-body {
-    font-size: 14px;
-    padding: 10px;
-}
 
 /* span.repo {
     cursor: grab;
@@ -37,7 +62,13 @@ li[draggable] {
 
 li.repo {
     margin-bottom: 7px;
-    padding: 5px;
+    /* padding: 5px; */
+    box-sizing: content-box;
+}
+
+li.repo.isdragged {
+    opacity: .5;
+    border: 2px dashed black;
 }
 
 li.repo>div {
