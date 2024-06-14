@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     restore_options();
-    document.querySelectorAll('input').forEach(el => {
+    document.querySelectorAll('input,textarea').forEach(el => {
         el.addEventListener('change', save_options);
     });
 });
