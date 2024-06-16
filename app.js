@@ -331,20 +331,20 @@
                 repos[sr].forEach(issueId => {
                     if (!mentionedStories.has(issueId)) {
                         mentionedStories.add(issueId);
-                        releaseNotes.push(issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary)
+                        releaseNotes.push([issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary, issues[issueId]?.key])
                     }
                 })
             })
         });
-        releaseNotes.sort((a, b) => a.toLocaleLowerCase().localeCompare(b.toLocaleLowerCase()));
+        releaseNotes.sort((a, b) => a[0].toLocaleLowerCase().localeCompare(b[0].toLocaleLowerCase()));
         releaseNotes.forEach(relNote => {
-            const relNoteLower = relNote?.toLowerCase();
+            const relNoteLower = relNote[0]?.toLowerCase();
             if (relNoteLower.indexOf('fix') != -1 || relNoteLower.indexOf('bug') !== -1) {
-                relNote = '🔴 ' + relNote;
+                relNote[0] = '🔴 ' + relNote[0];
             } else {
-                relNote = '🆕 ' + relNote;
+                relNote[0] = '🆕 ' + relNote[0];
             }
-            releaseNotesHtml += `<li>${relNote}</li>`
+            releaseNotesHtml += `<li title="${relNote[1]}">${relNote[0]}</li>`
         })
         document.getElementById('release-notes').innerHTML = releaseNotesHtml;
 
