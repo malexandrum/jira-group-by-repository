@@ -1,14 +1,34 @@
-/* div#content {
-    min-width: 600px;
-} */
+:root {
+    --primary-background: #fff;
+    --secondary-background: #eee;
+    --primary: #000;
+    --accent-color: #00307d;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-background: #31363F;
+        --secondary-background: #222831;
+        --primary: #e8e8e8;
+        --accent-color: #387ef0;
+    }
+}
+
 * {
     box-sizing: border-box;
 }
+
 body {
+    color: var(--primary);
+    background-color: var(--secondary-background);
     height: 100%;
     margin: 0;
     font-size: 14px;
     padding: 20px;
+}
+
+a, a:visited {
+    color: var(--accent-color);
 }
 
 div.all-content {
@@ -41,7 +61,7 @@ div.footer {
 }
 
 div.col {
-    background-color: #eee;
+    background-color: var(--primary-background);
     border-radius: 10px;
     box-shadow: grey 0px 1px 5px 1px;
     flex: 1;
@@ -65,13 +85,14 @@ li.repo {
 
 li.repo.isdragged {
     opacity: .5;
-    border: 2px dashed black;
+    border: 2px dashed var(--primary);
 }
 
 li.repo>div {
     display: inline-block;
     padding: 5px;
-    margin-top: 1px; /* to fix dragging image having part of border */
+    margin-top: 1px;
+    /* to fix dragging image having part of border */
 }
 
 li.issue {
@@ -82,6 +103,9 @@ li.issue {
     margin-left: 5px;
 }
 
+div.repo {
+    background-color: var(--primary-background);
+}
 
 .spinner {
     display: inline;
@@ -95,7 +119,7 @@ li.issue {
 }
 
 .dayofweek>span {
-    font-weight: bold;    
+    font-weight: bold;
 }
 
 textarea.callouts {
@@ -135,7 +159,7 @@ li.dropzone {
 }
 
 li.dropzone.dragover {
-    background-color: lightgreen;
+    background-color: rgb(114, 206, 100);
 }
 
 
@@ -143,12 +167,12 @@ li.dropzone.dragover {
     display: none;
 }
 
-li > p {
+li>p {
     margin: 0px;
 }
 
 #copy-confirmation {
-    color: gray;
+    color: var(--accent-color);
 }
 
 label {
