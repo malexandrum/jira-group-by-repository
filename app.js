@@ -328,7 +328,7 @@
         const releaseNotes = []
         Object.values(scheduledRepos).forEach(srs => {
             srs.forEach(sr => {
-                repos[sr].forEach(issueId => {
+                repos[sr]?.forEach(issueId => {
                     if (!mentionedStories.has(issueId)) {
                         mentionedStories.add(issueId);
                         releaseNotes.push([issues[issueId].fields[REL_NOTES_FIELD] || issues[issueId].fields.summary, issues[issueId]?.key])
@@ -393,6 +393,8 @@
     }
 
     function renderRepo(repo, repos, issues, ignoreRelNotes = false) {
+        if (!repos[repo])
+            return
         let result = `<li class="repo" draggable="true" id="${repo.replace(/[\s,\/]/g, '')}"><div class="repo">${repo}</div>` +
             `<ul>`;
         for (let issueIndex of repos[repo]) {
